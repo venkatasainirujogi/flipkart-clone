@@ -1,13 +1,214 @@
-<!-- User provided index.html (truncated for package structure) -->
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Flipkart Clone</title>
-  <link rel="stylesheet" href="css/main.css">
-  <link rel="stylesheet" href="css/components.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/main.css" />
+  <link rel="stylesheet" href="css/components.css" />
 </head>
 <body>
-  <div id="app"></div>
+  <!-- ── NAV ───────────────────────────────────────────── -->
+  <nav class="navbar">
+    <div class="nav-inner">
+      <a href="/" class="nav-logo">
+        <span class="logo-flip">flip</span><span class="logo-kart">kart</span>
+        <span class="logo-plus">✦</span>
+      </a>
+      <div class="nav-search">
+        <input type="text" id="searchInput" placeholder="Search for products, brands and more" autocomplete="off" />
+        <button class="search-btn" id="searchBtn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+          </svg>
+        </button>
+      </div>
+      <div class="nav-actions">
+        <div class="nav-btn" id="loginBtn">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+          </svg>
+          <span id="userLabel">Login</span>
+          <div class="dropdown-menu" id="userDropdown">
+            <div class="dropdown-header" id="dropdownHeader">
+              <p>New to Flipkart?</p>
+              <a href="#" id="dropdownSignup">Create Account</a>
+            </div>
+            <div class="dropdown-items">
+              <a href="#" onclick="showPage('orders')">📦 My Orders</a>
+              <a href="#" onclick="showPage('profile')">👤 My Profile</a>
+              <a href="#" onclick="showPage('wishlist')">❤️ Wishlist</a>
+              <hr/>
+              <a href="#" id="logoutBtn" style="display:none;color:#d32f2f">🚪 Logout</a>
+            </div>
+          </div>
+        </div>
+        <a href="#" class="nav-btn cart-btn" onclick="showPage('cart')">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/>
+            <path d="M16 10a4 4 0 0 1-8 0"/>
+          </svg>
+          <span>Cart</span>
+          <span class="cart-badge" id="cartBadge">0</span>
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ── CATEGORY BAR ───────────────────────────────── -->
+  <div class="category-bar" id="categoryBar">
+    <div class="cat-bar-inner" id="catBarInner">
+      <a href="#" class="cat-item active" data-cat="">All</a>
+    </div>
+  </div>
+
+  <!-- ── PAGES ──────────────────────────────────────── -->
+  <main id="app">
+
+    <!-- HOME PAGE -->
+    <div id="page-home" class="page active">
+      <div class="hero-banner">
+        <div class="hero-slide active" style="background:linear-gradient(135deg,#1a237e,#2874F0)">
+          <div class="hero-content">
+            <p class="hero-tag">BEST DEALS TODAY</p>
+            <h1>Up to 80% Off<br/>Top Electronics</h1>
+            <button class="btn-hero" onclick="scrollToProducts()">Shop Now</button>
+          </div>
+          <div class="hero-img">🖥️</div>
+        </div>
+      </div>
+
+      <div class="container">
+        <!-- Deal strips -->
+        <section class="deal-strip">
+          <div class="deal-card">
+            <div class="deal-icon">⚡</div>
+            <div><strong>Flash Deals</strong><small>Ends in: <span id="flashTimer">02:14:33</span></small></div>
+          </div>
+          <div class="deal-card">
+            <div class="deal-icon">🚚</div>
+            <div><strong>Free Delivery</strong><small>On orders above ₹499</small></div>
+          </div>
+          <div class="deal-card">
+            <div class="deal-icon">↩️</div>
+            <div><strong>Easy Returns</strong><small>7-day hassle-free returns</small></div>
+          </div>
+          <div class="deal-card">
+            <div class="deal-icon">🔒</div>
+            <div><strong>Secure Pay</strong><small>100% secure payments</small></div>
+          </div>
+        </section>
+
+        <!-- Products -->
+        <section class="section-header">
+          <h2 id="sectionTitle">All Products</h2>
+          <div class="filter-row">
+            <select id="sortSelect" onchange="applyFilters()">
+              <option value="created_at">Latest</option>
+              <option value="selling_price-asc">Price: Low to High</option>
+              <option value="selling_price-desc">Price: High to Low</option>
+              <option value="rating">Top Rated</option>
+            </select>
+            <input type="number" id="minPrice" placeholder="Min ₹" onchange="applyFilters()" />
+            <input type="number" id="maxPrice" placeholder="Max ₹" onchange="applyFilters()" />
+          </div>
+        </section>
+
+        <div class="product-grid" id="productGrid">
+          <!-- Products loaded here -->
+        </div>
+        <div class="load-more-wrap">
+          <button class="btn-load-more" id="loadMoreBtn" onclick="loadMore()" style="display:none">Load More</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PRODUCT DETAIL PAGE -->
+    <div id="page-product" class="page">
+      <div class="container">
+        <div id="productDetail"></div>
+      </div>
+    </div>
+
+    <!-- CART PAGE -->
+    <div id="page-cart" class="page">
+      <div class="container">
+        <div id="cartContent"></div>
+      </div>
+    </div>
+
+    <!-- CHECKOUT PAGE -->
+    <div id="page-checkout" class="page">
+      <div class="container">
+        <div id="checkoutContent"></div>
+      </div>
+    </div>
+
+    <!-- ORDERS PAGE -->
+    <div id="page-orders" class="page">
+      <div class="container">
+        <div id="ordersContent"></div>
+      </div>
+    </div>
+
+    <!-- PROFILE PAGE -->
+    <div id="page-profile" class="page">
+      <div class="container">
+        <div id="profileContent"></div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ── AUTH MODAL ─────────────────────────────────── -->
+  <div class="modal-overlay" id="authModal">
+    <div class="modal-box auth-modal">
+      <button class="modal-close" onclick="closeModal('authModal')">✕</button>
+      <div class="auth-side">
+        <h2>Login</h2>
+        <p>Get access to your orders, wishlist and more</p>
+        <div class="auth-art">🛍️</div>
+      </div>
+      <div class="auth-form-side">
+        <div class="auth-tabs">
+          <button class="auth-tab active" onclick="switchAuthTab('login')">Login</button>
+          <button class="auth-tab" onclick="switchAuthTab('register')">Register</button>
+        </div>
+        <!-- Login Form -->
+        <form id="loginForm" class="auth-form">
+          <input type="email" id="loginEmail" placeholder="Email address" required />
+          <input type="password" id="loginPassword" placeholder="Password" required />
+          <div class="form-error" id="loginError"></div>
+          <button type="submit" class="btn-primary full-width">Login Securely</button>
+        </form>
+        <!-- Register Form -->
+        <form id="registerForm" class="auth-form" style="display:none">
+          <input type="text" id="regName" placeholder="Full name" required />
+          <input type="email" id="regEmail" placeholder="Email address" required />
+          <input type="tel" id="regPhone" placeholder="Phone number" />
+          <input type="password" id="regPassword" placeholder="Password (min 8 chars)" required />
+          <div class="form-error" id="registerError"></div>
+          <button type="submit" class="btn-primary full-width">Create Account</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TOAST ──────────────────────────────────────── -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- ── LOADER ─────────────────────────────────────── -->
+  <div class="page-loader" id="pageLoader">
+    <div class="loader-spinner"></div>
+  </div>
+
   <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/cart.js"></script>
+  <script src="js/products.js"></script>
+  <script src="js/orders.js"></script>
+  <script src="js/app.js"></script>
 </body>
 </html>
