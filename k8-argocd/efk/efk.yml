@@ -1,0 +1,26 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+
+metadata:
+  name: efk-stack
+  namespace: argocd
+
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/venkatasainirujogi/flipkart-clone.git
+    path: efk
+    targetRevision: main
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kube-logging
+
+  syncPolicy:
+    automated:
+      prune: false
+      selfHeal: true
+
+    syncOptions:
+      - CreateNamespace=true

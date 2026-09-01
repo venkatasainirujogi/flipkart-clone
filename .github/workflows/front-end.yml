@@ -1,0 +1,147 @@
+name: CI/CD for Frontend
+
+on:
+  workflow_dispatch:
+
+  # Uncomment this when you want automatic deployment
+  # push:
+  #   branches:
+  #     - main
+
+env:
+  AWS_REGION: us-east-1
+
+  ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+
+  ECR_REPOSITORY: flipkart-frontend
+
+  FRONTEND_FOLDER: flipkart-clone-structure
+
+  K8S_FILE: flipkart-clone-structure/deployment.yml
+
+permissions:
+  contents: write
+
+jobs:
+
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+
+      # ==========================================
+      # 1. CHECKOUT CODE
+      # ==========================================
+      - name: 🧾 Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GIT_PAT }}
+
+      # ==========================================
+      # 2. CONFIGURE AWS
+      # ==========================================
+      - name: 🔧 Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # ==========================================
+      # 3. LOGIN TO ECR
+      # ==========================================
+      - name: 📦 Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # ==========================================
+      # 4. CREATE ECR REPOSITORY
+      # ==========================================
+      - name: 📦 Create ECR repository if not exists
+        run: |
+
+          aws ecr describe-repositories \
+            --repository-names "$ECR_REPOSITORY" \
+            --region "$AWS_REGION" \
+            >/dev/null 2>&1 \
+            || aws ecr create-repository \
+              --repository-name "$ECR_REPOSITORY" \
+              --region "$AWS_REGION" \
+              --image-scanning-configuration scanOnPush=true
+
+      # ==========================================
+      # 5. BUILD DOCKER IMAGE
+      # ==========================================
+      - name: 🛠 Build Docker Image
+        run: |
+
+          IMAGE_TAG="${GITHUB_SHA}"
+
+          IMAGE_URI="$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+
+          echo "Building image:"
+          echo "$IMAGE_URI"
+
+          docker build \
+            -t "$IMAGE_URI" \
+            "$FRONTEND_FOLDER"
+
+      # ==========================================
+      # 6. PUSH IMAGE TO ECR
+      # ==========================================
+      - name: 🚀 Push Docker Image to ECR
+        run: |
+
+          IMAGE_TAG="${GITHUB_SHA}"
+
+          IMAGE_URI="$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+
+          docker push "$IMAGE_URI"
+
+          echo "✅ Image pushed:"
+          echo "$IMAGE_URI"
+
+      # ==========================================
+      # 7. UPDATE KUBERNETES YAML
+      # ==========================================
+      - name: ☸️ Update Kubernetes deployment
+        run: |
+
+          IMAGE_TAG="${GITHUB_SHA}"
+
+          IMAGE_URI="$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+
+          echo "Updating Kubernetes YAML..."
+
+          sed -i \
+            "s|image:.*|image: $IMAGE_URI|g" \
+            "$K8S_FILE"
+
+          echo "Updated deployment.yml:"
+          cat "$K8S_FILE"
+
+      # ==========================================
+      # 8. COMMIT YAML CHANGE
+      # ==========================================
+      - name: 🔄 Commit Kubernetes YAML
+        run: |
+
+          git config --global user.name "GitHub Actions"
+
+          git config --global user.email "actions@github.com"
+
+          git add "$K8S_FILE"
+
+          if git diff --cached --quiet; then
+
+            echo "ℹ️ No changes to commit"
+
+          else
+
+            git commit \
+              -m "🔄 Update frontend image [skip ci]"
+
+            git push origin main
+
+            echo "✅ Kubernetes YAML pushed to GitHub"
+
+          fi
